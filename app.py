@@ -12,7 +12,6 @@ from chromadb.utils.embedding_functions import OpenAIEmbeddingFunction
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.chains.combine_documents import create_stuff_documents_chain
 from langchain.chains.retrieval import create_retrieval_chain
-import os
 
 # Page setting
 st.set_page_config(layout="wide")
@@ -20,9 +19,13 @@ st.set_page_config(layout="wide")
 # Replace it with your OPENAI API KEY
 OPENAI_API_KEY = st.secrets["OPENAI_API_KEY"]
 
+collection_name="chat-with-pdf"
+
 # Load Vector datasse
 native_db = chromadb.PersistentClient("./chroma_db")
-db = Chroma(client=native_db, collection_name="chat-with-pdf", embedding_function=OpenAIEmbeddings())
+db = Chroma(client=native_db, collection_name=collection_name, embedding_function=OpenAIEmbeddings())
+
+
 
 # Init langchain
 llm = ChatOpenAI(
@@ -61,11 +64,11 @@ def get_collection():
     collection = None
     try:
         # Delete all documents
-        native_db.delete_collection("chat-with-pdf")
+        native_db.delete_collection(collection_name)
     except:
         pass
     finally:
-        collection = native_db.get_or_create_collection("chat-with-pdf",
+        collection = native_db.get_or_create_collection(collection_name,
                                                         embedding_function=embeddings)
     return collection
 
@@ -83,7 +86,6 @@ def add_files(uploaded_files):
     for file in new_files:
         # Step 1: load uploaded file
         # save doc temporary
-        tmp_location = os.path.join('/tmp', file.name)
         temp_file = f"./{file.name}"
         with open(temp_file, "wb") as f:
             f.write(file.getvalue())
@@ -146,6 +148,10 @@ def refresh_chunks(uploaded_files):
     # Step 3: Save the state
     st.session_state.old_filenames = uploaded_filename
 
+
+if st.button("Refresh"):
+    # Clears all st.cache_resource caches:
+    st.cache_resource.clear()
 
 st.header("📗 Chat with PDF (RAG version)")
 
